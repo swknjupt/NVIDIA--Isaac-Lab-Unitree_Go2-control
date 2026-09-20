@@ -61,17 +61,7 @@ unitree_go2_isaaclab_rl/
 │   ├── task3_navigation.yaml
 │   └── task4_sim2real_rma.yaml
 ├── docs/
-│   ├── project_overview.md
-│   ├── results_and_checkpoints.md
-│   ├── task1_design.md
-│   ├── task2_design.md
-│   ├── task3_design.md
-│   ├── task4_design.md
-│   ├── troubleshooting.md
-│   ├── ubuntu_training.md
-│   ├── ubuntu_validation.md
-│   ├── windows_path_config.md
-│   └── windows_training.md
+│   └── ubuntu_validation.md
 ├── scripts/
 │   ├── ubuntu/
 │   │   ├── _common.sh
@@ -194,7 +184,7 @@ unitree_go2_isaaclab_rl/
 |---|---|
 | `assets/` | 素材目录，可以存放 GIF、运动文件、USD 等资源（本项目中暂未有相关文件）。 |
 | `configs/` | 任务配置和平台示例配置。用于说明 Ubuntu / Windows 平台配置。 |
-| `docs/` | 专题文档，包括项目概览、任务设计、训练说明、测试记录、路径配置和故障排查。 |
+| `docs/` | 文档目录，包含环境与测试验证记录 (`ubuntu_validation.md`)。 |
 | `scripts/ubuntu/` | Ubuntu 下的环境检查、world/env 测试、smoke training、正式训练、模型评估和可视化脚本。 |
 | `scripts/windows/` | Windows 下的环境检查、任务检查、smoke training、正式训练、模型评估和可视化脚本。 |
 | `src/go2_rl/common/` | 公共工具模块，包括 skrl 模型、frame stack wrapper、checkpoint、normalizer、日志进度、路径解析和训练元数据。 |
@@ -982,7 +972,6 @@ Task2 需要在基础跟踪能力上进行盲爬，Task4 加入扰动和域随�
 ```text
 configs/local_paths.example.yaml
 configs/platform_windows.example.yaml
-docs/windows_path_config.md
 scripts/windows/_common.ps1
 ```
 
