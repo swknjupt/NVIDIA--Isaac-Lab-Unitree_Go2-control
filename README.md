@@ -61,7 +61,8 @@ unitree_go2_isaaclab_rl/
 │   ├── task3_navigation.yaml
 │   └── task4_sim2real_rma.yaml
 ├── docs/
-│   └── ubuntu_validation.md
+│   ├── ubuntu_validation.md
+│   └── workflow_and_training_plan.md
 ├── scripts/
 │   ├── ubuntu/
 │   │   ├── _common.sh
@@ -184,7 +185,7 @@ unitree_go2_isaaclab_rl/
 |---|---|
 | `assets/` | 素材目录，可以存放 GIF、运动文件、USD 等资源（本项目中暂未有相关文件）。 |
 | `configs/` | 任务配置和平台示例配置。用于说明 Ubuntu / Windows 平台配置。 |
-| `docs/` | 文档目录，包含环境与测试验证记录 (`ubuntu_validation.md`)。 |
+| `docs/` | 文档目录，包含环境验证记录 (`ubuntu_validation.md`) 与训练工作流规划 (`workflow_and_training_plan.md`)。 |
 | `scripts/ubuntu/` | Ubuntu 下的环境检查、world/env 测试、smoke training、正式训练、模型评估和可视化脚本。 |
 | `scripts/windows/` | Windows 下的环境检查、任务检查、smoke training、正式训练、模型评估和可视化脚本。 |
 | `src/go2_rl/common/` | 公共工具模块，包括 skrl 模型、frame stack wrapper、checkpoint、normalizer、日志进度、路径解析和训练元数据。 |
