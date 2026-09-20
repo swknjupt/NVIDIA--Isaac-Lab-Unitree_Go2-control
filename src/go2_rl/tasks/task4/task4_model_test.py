@@ -86,13 +86,17 @@ parser.add_argument("--deterministic", action="store_true", default=True)
 parser.add_argument("--visualize", action="store_true", help="Compatibility flag; GUI is enabled by default")
 parser.add_argument("--headless-eval", action="store_true", help="Run model evaluation without Isaac Sim GUI")
 parser.add_argument("--no-close-on-exit", action="store_true", help="Debug only: keep Isaac Sim open after evaluation")
+parser.add_argument("--record-video", action="store_true", help="Record and save evaluation video to MP4")
+parser.add_argument("--video-path", type=str, default=None, help="Custom output MP4 path (default: <run_dir>/eval_videos/task4_eval.mp4)")
+parser.add_argument("--video-length", type=int, default=500, help="Number of control steps to record (default: 500)")
+parser.add_argument("--video-fps", type=int, default=30, help="Video framerate (default: 30)")
 AppLauncher.add_app_launcher_args(parser)
 args_cli, _ = parser.parse_known_args()
 
 # Evaluation opens Isaac Sim GUI by default.
 # --headless-eval switches AppLauncher to headless mode for terminal-only runs.
 args_cli.headless = bool(getattr(args_cli, "headless_eval", False))
-if hasattr(args_cli, "enable_cameras"):
+if hasattr(args_cli, "enable_cameras") or bool(getattr(args_cli, "record_video", False)):
     args_cli.enable_cameras = True
 simulation_app = AppLauncher(args_cli).app
 
@@ -111,6 +115,7 @@ from go2_rl.common.go2_skrl_models import Go2Actor, Go2Critic
 from go2_rl.common.info_utils import flat_dict, load_normalizers, to_float
 from go2_rl.common.eval_curriculum_utils import force_eval_curriculum
 from go2_rl.common.model_eval_utils import direct_policy_action, init_agent_compat
+from go2_rl.common.video_recorder import Go2VideoRecorder
 from go2_rl.tasks.task4.task4_config import Task4Config
 from go2_rl.tasks.task4.task4_env import Go2Task4Env
 
@@ -467,6 +472,19 @@ def main():
     print("note       : this is Teacher policy evaluation, not Student deployment evaluation")
     print("=" * 150 + "\n")
 
+    recorder = None
+    if bool(getattr(args_cli, "record_video", False)):
+        video_out = args_cli.video_path
+        if not video_out:
+            video_out = checkpoint.parent.parent / "eval_videos" / "task4_eval.mp4"
+        recorder = Go2VideoRecorder(
+            env=base_env,
+            video_path=video_out,
+            fps=int(args_cli.video_fps),
+            record_steps=int(args_cli.video_length),
+            follow_robot=True,
+        )
+
     try:
         with tqdm(
             total=int(args_cli.steps),
@@ -483,6 +501,13 @@ def main():
                         step=int(step),
                     )
                     states, rewards, terminated, truncated, _ = step_env(env, actions)
+
+                if recorder is not None and step < int(args_cli.video_length):
+                    try:
+                        robot_pos = base_env.robot.data.root_pos_w[0].detach().cpu().numpy()
+                    except Exception:
+                        robot_pos = None
+                    recorder.step(robot_pos=robot_pos)
 
                 flat = flat_dict(teacher_env.last_info)
 
@@ -542,6 +567,12 @@ def main():
         print("6. 如果扰动阶段 Tracking_Error 长期过高，优先调 push curriculum 与 recovery reward。")
 
     finally:
+        if recorder is not None:
+            try:
+                recorder.close()
+            except Exception:
+                pass
+
         try:
             env.close()
         except Exception:

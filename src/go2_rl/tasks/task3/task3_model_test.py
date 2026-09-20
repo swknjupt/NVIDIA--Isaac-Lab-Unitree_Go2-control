@@ -96,13 +96,17 @@ parser.add_argument(
     action="store_true",
     help="Debug only: keep Isaac Sim open after evaluation",
 )
+parser.add_argument("--record-video", action="store_true", help="Record and save evaluation video to MP4")
+parser.add_argument("--video-path", type=str, default=None, help="Custom output MP4 path (default: <run_dir>/eval_videos/task3_eval.mp4)")
+parser.add_argument("--video-length", type=int, default=500, help="Number of control steps to record (default: 500)")
+parser.add_argument("--video-fps", type=int, default=30, help="Video framerate (default: 30)")
 AppLauncher.add_app_launcher_args(parser)
 args_cli, _ = parser.parse_known_args()
 
 # Windows / GIF 评估默认打开 Isaac Sim GUI。
 # 只有显式传入 --headless-eval 时，才使用无头评估。
 args_cli.headless = bool(getattr(args_cli, "headless_eval", False))
-if hasattr(args_cli, "enable_cameras"):
+if hasattr(args_cli, "enable_cameras") or bool(getattr(args_cli, "record_video", False)):
     args_cli.enable_cameras = True
 
 simulation_app = AppLauncher(args_cli).app
@@ -130,6 +134,7 @@ from go2_rl.common.eval_curriculum_utils import force_eval_curriculum
 from go2_rl.common.go2_skrl_models import Go2Actor, Go2Critic
 from go2_rl.common.info_utils import flat_dict, load_normalizers
 from go2_rl.common.model_eval_utils import direct_policy_action, init_agent_compat
+from go2_rl.common.video_recorder import Go2VideoRecorder
 from go2_rl.tasks.task3.task3_config import Task3Config
 from go2_rl.tasks.task3.task3_env import Go2Task3Env
 
@@ -791,6 +796,20 @@ def main():
     print(f"markers      : {show_markers}")
     print("=" * 150 + "\n")
 
+    recorder = None
+    if bool(getattr(args_cli, "record_video", False)):
+        video_out = args_cli.video_path
+        if not video_out:
+            video_out = checkpoint.parent.parent / "eval_videos" / "task3_eval.mp4"
+        recorder = Go2VideoRecorder(
+            env=base_env,
+            video_path=video_out,
+            fps=int(args_cli.video_fps),
+            record_steps=int(args_cli.video_length),
+            follow_robot=True,
+            camera_offset=(-3.5, -3.5, 2.8),
+        )
+
     try:
         with tqdm(
             total=int(args_cli.steps),
@@ -813,6 +832,13 @@ def main():
                     states, rewards, terminated, truncated, _ = step_env(env, actions)
 
                 markers.update()
+
+                if recorder is not None and step < int(args_cli.video_length):
+                    try:
+                        robot_pos = base_env.robot.data.root_pos_w[0].detach().cpu().numpy()
+                    except Exception:
+                        robot_pos = None
+                    recorder.step(robot_pos=robot_pos)
 
                 flat = flat_dict(stacked_env.last_info)
 
@@ -880,6 +906,12 @@ def main():
         print_table(summarize(records))
 
     finally:
+        if recorder is not None:
+            try:
+                recorder.close()
+            except Exception:
+                pass
+
         try:
             env.close()
         except Exception:

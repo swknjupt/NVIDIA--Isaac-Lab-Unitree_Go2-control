@@ -42,7 +42,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/_common.sh"
 
 CKPT="${1:-}"
-go2_require_checkpoint_arg "${CKPT}" "Usage: bash scripts/ubuntu/eval_task1.sh /path/to/go2_task1_model.pt"
+go2_require_checkpoint_arg "${CKPT}" "Usage: bash scripts/ubuntu/eval_task1.sh /path/to/go2_task1_model.pt [--record-video]"
+shift 1
 
 go2_prepare_runtime
 go2_print_header "Unitree Go2 Task1 model evaluation"
@@ -55,4 +56,5 @@ python src/go2_rl/tasks/task1/task1_model_test.py \
     --steps 2000 \
     --print-interval 100 \
     --headless-eval \
-    --device cuda:0
+    --device cuda:0 \
+    "$@"

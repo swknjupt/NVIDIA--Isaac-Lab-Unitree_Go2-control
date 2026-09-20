@@ -86,11 +86,16 @@ bash scripts/ubuntu/train_task4.sh [logs/task2/<run_name>/final_checkpoint/go2_t
 
 ### 6. Evaluation and Visualization
 ```bash
-# Headless model evaluation
+# Headless model evaluation & metrics table
 bash scripts/ubuntu/eval_task1.sh <path_to_checkpoint.pt>
 bash scripts/ubuntu/eval_task2.sh <path_to_checkpoint.pt>
 bash scripts/ubuntu/eval_task3.sh <path_to_checkpoint.pt>
 bash scripts/ubuntu/eval_task4.sh <path_to_checkpoint.pt>
+
+# Headless evaluation with automatic MP4 video recording
+bash scripts/ubuntu/eval_task1.sh <path_to_checkpoint.pt> --record-video [--video-length 600]
+bash scripts/ubuntu/eval_task2.sh <path_to_checkpoint.pt> --record-video [--video-length 600]
+bash scripts/ubuntu/eval_task3.sh <path_to_checkpoint.pt> --record-video [--video-length 600]
 
 # GUI visualization (requires display)
 bash scripts/ubuntu/visualize_task1.sh <path_to_checkpoint.pt>
@@ -120,6 +125,7 @@ bash scripts/ubuntu/visualize_task4.sh <path_to_checkpoint.pt>
   - `checkpoint_utils.py` & `normalizer_utils.py`: Policy checkpoint loading/saving and empirical observation normalizer state management.
   - `paths.py`: Log root resolution with fallback precedence: explicit arg -> task-specific env var -> general env var -> `local_paths.yaml` -> `<project_root>/logs/<task>`.
   - `progress.py` & `train_metadata.py`: Training progress display and run metadata persistence.
+  - `video_recorder.py`: Autonomous headless RGB frame capture with camera tracking and H.264 MP4 export (`Go2VideoRecorder`).
 
 - **`src/go2_rl/tasks/task{1..4}/`**: Self-contained per-task implementation:
   - `task*_config.py`: Pure dataclass configuration (no IsaacLab / Omniverse imports, safe to load anywhere).
