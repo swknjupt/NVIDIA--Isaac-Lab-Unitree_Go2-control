@@ -66,6 +66,28 @@ go2_cd_project_root() {
     cd "${GO2_PROJECT_ROOT}"
 }
 
+go2_resolve_python() {
+    if [ -n "${PYTHON:-}" ]; then
+        echo "${PYTHON}"
+        return 0
+    fi
+    if command -v python >/dev/null 2>&1; then
+        command -v python
+        return 0
+    fi
+    if [ -x "/isaac-sim/python.sh" ]; then
+        echo "/isaac-sim/python.sh"
+        return 0
+    fi
+    if [ -x "/workspace/isaaclab/isaaclab.sh" ]; then
+        echo "/workspace/isaaclab/isaaclab.sh -p"
+        return 0
+    fi
+    echo "python"
+}
+
+GO2_PYTHON="$(go2_resolve_python)"
+
 go2_setup_pythonpath() {
     export PYTHONPATH="${GO2_PROJECT_ROOT}/src:${PYTHONPATH:-}"
 }
@@ -73,6 +95,13 @@ go2_setup_pythonpath() {
 go2_prepare_runtime() {
     go2_cd_project_root
     go2_setup_pythonpath
+
+    if ! command -v python >/dev/null 2>&1 && [ -n "${GO2_PYTHON:-}" ] && [ "${GO2_PYTHON}" != "python" ]; then
+        python() {
+            ${GO2_PYTHON} "$@"
+        }
+        export -f python 2>/dev/null || true
+    fi
 }
 
 go2_print_header() {
@@ -80,7 +109,7 @@ go2_print_header() {
     echo "============================================================"
     echo "${title}"
     echo "PROJECT_ROOT=${GO2_PROJECT_ROOT}"
-    echo "PYTHON=$(command -v python || true)"
+    echo "PYTHON=${GO2_PYTHON}"
     echo "============================================================"
 }
 
@@ -129,7 +158,7 @@ go2_check_python_stack() {
         shift
     done
 
-    REQUIRE_ISAACLAB="${require_isaaclab}" REQUIRE_SKRL="${require_skrl}" python - <<'PY'
+    REQUIRE_ISAACLAB="${require_isaaclab}" REQUIRE_SKRL="${require_skrl}" ${GO2_PYTHON} - <<'PY'
 import os
 import sys
 
