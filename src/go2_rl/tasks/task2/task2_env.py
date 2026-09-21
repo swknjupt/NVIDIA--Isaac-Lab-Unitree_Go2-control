@@ -166,7 +166,6 @@ class Go2Task2Env(gym.Env):
             dt=float(cfg.sim_dt),
             device=str(cfg.device),
             physx=sim_utils.PhysxCfg(
-                enable_external_forces_every_iteration=True,
                 min_position_iteration_count=4,
                 max_position_iteration_count=8,
                 min_velocity_iteration_count=1,
