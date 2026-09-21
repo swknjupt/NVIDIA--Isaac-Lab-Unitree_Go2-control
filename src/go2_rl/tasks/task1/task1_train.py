@@ -130,10 +130,18 @@ from skrl.trainers.torch import StepTrainer
 from skrl.utils import set_seed
 
 try:
-    from skrl.agents.torch.ppo import PPO, PPO_CFG
+    from skrl.agents.torch.ppo import PPO, PPO_DEFAULT_CONFIG
 except ImportError:
     from skrl.agents.torch.ppo import PPO
-    from skrl.agents.torch.ppo.ppo_cfg import PPO_CFG
+    PPO_DEFAULT_CONFIG = None
+
+try:
+    from skrl.agents.torch.ppo import PPO_CFG
+except ImportError:
+    try:
+        from skrl.agents.torch.ppo.ppo_cfg import PPO_CFG
+    except ImportError:
+        PPO_CFG = None
 
 try:
     from skrl.resources.schedulers.torch import KLAdaptiveLR
@@ -141,7 +149,8 @@ except ImportError:
     from skrl.resources.schedulers.torch import KLAdaptiveRL as KLAdaptiveLR
 
 from go2_rl.common.go2_skrl_models import Go2Actor, Go2Critic
-from go2_rl.common.go2_skrl_wrappers import Go2FrameStackWrapper
+from go2_rl.common.go2_skrl_wrappers import Go2FrameStackWrapper, Go2StepTrainer
+from go2_rl.common.model_eval_utils import create_ppo_agent
 from go2_rl.common.info_utils import (
     current_lr,
     flat_dict,
@@ -194,10 +203,15 @@ def print_update(pbar, update_id, env_steps, total_steps, elapsed, num_envs, rol
 
 
 def _base_ppo_cfg_dict():
-    cfg = PPO_CFG()
-    if dataclasses.is_dataclass(cfg):
-        return dataclasses.asdict(cfg)
-    return cfg.copy()
+    if PPO_DEFAULT_CONFIG is not None:
+        import copy
+        return copy.deepcopy(PPO_DEFAULT_CONFIG)
+    if PPO_CFG is not None:
+        cfg = PPO_CFG()
+        if dataclasses.is_dataclass(cfg):
+            return dataclasses.asdict(cfg)
+        return cfg.copy()
+    return {}
 
 
 def _set_if_supported(cfg: dict, requested: dict) -> None:
@@ -373,7 +387,7 @@ def main():
 
     memory = RandomMemory(memory_size=int(cfg["rollouts"]), num_envs=num_envs, device=env.device)
 
-    agent = PPO(
+    agent = create_ppo_agent(
         models=models,
         memory=memory,
         cfg=cfg,
@@ -387,7 +401,7 @@ def main():
         print(f"[INFO] resume skrl checkpoint: {args_cli.resume}")
         agent.load(args_cli.resume)
 
-    trainer = StepTrainer(
+    trainer = Go2StepTrainer(
         cfg={
             "timesteps": int(total_vector_steps),
             "headless": True,
@@ -408,7 +422,8 @@ def main():
     start = time.time()
 
     try:
-        trainer.reset()
+        if hasattr(trainer, "reset"):
+            trainer.reset()
 
         with tqdm(
             total=total_env_steps,

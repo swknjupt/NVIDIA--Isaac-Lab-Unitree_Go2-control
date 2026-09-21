@@ -188,3 +188,37 @@ def direct_policy_action(agent, states, *, debug: bool = False, step: int = 0):
             )
 
         return actions
+
+
+def create_ppo_agent(
+    models,
+    memory,
+    cfg,
+    observation_space,
+    state_space,
+    action_space,
+    device,
+):
+    """Instantiate a skrl PPO agent supporting both older and newer skrl versions."""
+    from skrl.agents.torch.ppo import PPO
+
+    try:
+        return PPO(
+            models=models,
+            memory=memory,
+            cfg=cfg,
+            observation_space=observation_space,
+            state_space=state_space,
+            action_space=action_space,
+            device=device,
+        )
+    except TypeError:
+        return PPO(
+            models=models,
+            memory=memory,
+            cfg=cfg,
+            observation_space=observation_space,
+            action_space=action_space,
+            device=device,
+        )
+

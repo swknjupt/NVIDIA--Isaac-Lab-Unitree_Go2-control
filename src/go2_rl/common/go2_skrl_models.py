@@ -61,10 +61,10 @@ class Go2Actor(GaussianMixin, Model):
         Model.__init__(
             self,
             observation_space=observation_space,
-            state_space=state_space,
             action_space=action_space,
             device=device,
         )
+        self.state_space = state_space
         GaussianMixin.__init__(
             self,
             clip_actions=False,
@@ -98,9 +98,11 @@ class Go2Actor(GaussianMixin, Model):
             nn.init.orthogonal_(m.weight, gain=1.0)
             nn.init.constant_(m.bias, 0.0)
 
-    def compute(self, inputs, role):
-        x = inputs.get("observations", inputs.get("states"))
-        return self.net(x), {"log_std": self.log_std_parameter}
+    def compute(self, inputs, role=""):
+        x = inputs.get("observations")
+        if x is None:
+            x = inputs.get("states")
+        return self.net(x), self.log_std_parameter, {}
 
 
 class Go2Critic(DeterministicMixin, Model):
@@ -114,17 +116,20 @@ class Go2Critic(DeterministicMixin, Model):
         device,
         hidden_dims=(512, 256, 128),
     ):
+        # In skrl, value models use observation_space for shape definition.
+        # For asymmetric critic, pass state_space as the model's observation_space.
+        effective_space = state_space if state_space is not None and getattr(state_space, "shape", None) else observation_space
         Model.__init__(
             self,
-            observation_space=observation_space,
-            state_space=state_space,
+            observation_space=effective_space,
             action_space=action_space,
             device=device,
         )
+        self.state_space = state_space
         DeterministicMixin.__init__(self, clip_actions=False)
 
         layers = []
-        in_dim = int(state_space.shape[0])
+        in_dim = int(effective_space.shape[0])
         for h in hidden_dims:
             layers += [nn.Linear(in_dim, int(h)), nn.ELU()]
             in_dim = int(h)
@@ -134,4 +139,7 @@ class Go2Critic(DeterministicMixin, Model):
         self.apply(Go2Actor._orthogonal_init)
 
     def compute(self, inputs, role):
-        return self.net(inputs.get("states")), {}
+        x = inputs.get("states")
+        if x is None:
+            x = inputs.get("observations")
+        return self.net(x), {}

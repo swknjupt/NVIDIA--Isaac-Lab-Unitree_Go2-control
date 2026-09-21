@@ -125,15 +125,23 @@ from skrl.resources.preprocessors.torch import RunningStandardScaler
 from skrl.utils import set_seed
 
 try:
-    from skrl.agents.torch.ppo import PPO, PPO_CFG
+    from skrl.agents.torch.ppo import PPO, PPO_DEFAULT_CONFIG
 except ImportError:
     from skrl.agents.torch.ppo import PPO
-    from skrl.agents.torch.ppo.ppo_cfg import PPO_CFG
+    PPO_DEFAULT_CONFIG = None
+
+try:
+    from skrl.agents.torch.ppo import PPO_CFG
+except ImportError:
+    try:
+        from skrl.agents.torch.ppo.ppo_cfg import PPO_CFG
+    except ImportError:
+        PPO_CFG = None
 
 from go2_rl.common.eval_curriculum_utils import force_eval_curriculum
 from go2_rl.common.go2_skrl_models import Go2Actor, Go2Critic
 from go2_rl.common.info_utils import flat_dict, load_normalizers
-from go2_rl.common.model_eval_utils import direct_policy_action, init_agent_compat
+from go2_rl.common.model_eval_utils import create_ppo_agent, direct_policy_action, init_agent_compat
 from go2_rl.common.video_recorder import Go2VideoRecorder
 from go2_rl.tasks.task3.task3_config import Task3Config
 from go2_rl.tasks.task3.task3_env import Go2Task3Env
@@ -513,10 +521,15 @@ def print_table(summary):
 
 
 def _base_ppo_cfg_dict():
-    cfg = PPO_CFG()
-    if dataclasses.is_dataclass(cfg):
-        return dataclasses.asdict(cfg)
-    return cfg.copy()
+    if PPO_DEFAULT_CONFIG is not None:
+        import copy
+        return copy.deepcopy(PPO_DEFAULT_CONFIG)
+    if PPO_CFG is not None:
+        cfg = PPO_CFG()
+        if dataclasses.is_dataclass(cfg):
+            return dataclasses.asdict(cfg)
+        return cfg.copy()
+    return {}
 
 
 def build_agent(env):
@@ -579,7 +592,7 @@ def build_agent(env):
 
     memory = RandomMemory(memory_size=1, num_envs=env.num_envs, device=env.device)
 
-    return PPO(
+    return create_ppo_agent(
         models=models,
         memory=memory,
         cfg=cfg,

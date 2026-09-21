@@ -365,3 +365,33 @@ class Go2FrameStackWrapper(gym.Env):
             self.env.close()
         except Exception:
             pass
+
+
+try:
+    from skrl.trainers.torch import StepTrainer
+
+    class Go2StepTrainer(StepTrainer):
+        """skrl StepTrainer wrapper ensuring single-agent compatibility across skrl versions."""
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if hasattr(self, "env") and hasattr(self.env, "num_envs"):
+                self.agents_scope = [(0, int(self.env.num_envs))]
+
+        def train(self, timestep=None, timesteps=None):
+            if isinstance(self.agents, (list, tuple)) and len(self.agents) == 1 and not isinstance(self.agents[0], (list, tuple)):
+                self.agents = self.agents[0]
+            if not getattr(self, "agents_scope", None) and hasattr(self, "env") and hasattr(self.env, "num_envs"):
+                self.agents_scope = [(0, int(self.env.num_envs))]
+            return super().train(timestep=timestep, timesteps=timesteps)
+
+        def eval(self, timestep=None, timesteps=None):
+            if isinstance(self.agents, (list, tuple)) and len(self.agents) == 1 and not isinstance(self.agents[0], (list, tuple)):
+                self.agents = self.agents[0]
+            if not getattr(self, "agents_scope", None) and hasattr(self, "env") and hasattr(self.env, "num_envs"):
+                self.agents_scope = [(0, int(self.env.num_envs))]
+            return super().eval(timestep=timestep, timesteps=timesteps)
+
+except ImportError:
+    Go2StepTrainer = None
+
