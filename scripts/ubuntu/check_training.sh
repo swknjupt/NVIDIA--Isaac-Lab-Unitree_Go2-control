@@ -50,12 +50,14 @@ fi
 if [ -n "$LOG" ]; then
     LAST=$(docker exec "$CT" bash -c "tr \"\r\" \"\n\" < \"$LOG\" | grep \"skrl PPO:\" | tail -1")
     if [ -n "$LAST" ]; then
-        STEPS=$(printf "%s" "$LAST" | sed -n "s#.*| \([0-9,]*\)/350000000.*#\1#p" | tr -d ",")
+        PAIR=$(printf "%s" "$LAST" | sed -n "s#.*| \([0-9,]*\)/\([0-9,]*\)[ ].*#\1 \2#p")
+        STEPS=$(printf "%s" "$PAIR" | awk "{print \$1}" | tr -d ",")
+        TOTAL=$(printf "%s" "$PAIR" | awk "{print \$2}" | tr -d ",")
         PCT=$(printf "%s" "$LAST" | sed -n "s#.*PPO: *\([0-9]*\)%.*#\1#p")
         SPS=$(printf "%s" "$LAST" | sed -n "s#.*, \([0-9.]*\)steps/s.*#\1#p")
         REW=$(printf "%s" "$LAST" | sed -n "s#.*rew=\([-0-9.]*\).*#\1#p")
         FALL=$(printf "%s" "$LAST" | sed -n "s#.*fall=\([0-9.]*\).*#\1#p")
-        echo "progress      : ${STEPS:-?}/350000000 (${PCT:-?}%)  ${SPS:-?} steps/s"
+        echo "progress      : ${STEPS:-?}/${TOTAL:-?} (${PCT:-?}%)  ${SPS:-?} steps/s"
         echo "metrics       : rew=${REW:-?} fall=${FALL:-?}"
         case "${REW:-}" in
             *nan*|*inf*) echo "ANOMALY       : rew=${REW} (NaN/Inf detected!)";;
