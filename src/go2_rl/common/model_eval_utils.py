@@ -75,11 +75,39 @@ def extract_policy_tensor(states: Any):
     raise RuntimeError(f"Cannot extract policy tensor from states type={type(states)}")
 
 
+def _resolve_observation_preprocessor(agent):
+    """Resolve the observation preprocessor from an skrl agent.
+
+    skrl stores the policy observation preprocessor in ``_state_preprocessor``
+    (a dict keyed by role). Older/custom layouts may expose public or
+    alternative attribute names, so probe them all and unwrap role dicts.
+    """
+    for attr in (
+        "_observation_preprocessor",
+        "observation_preprocessor",
+        "_state_preprocessor",
+        "state_preprocessor",
+    ):
+        prep = getattr(agent, attr, None)
+        if prep is None:
+            continue
+        if isinstance(prep, dict):
+            prep = prep.get("policy") or prep.get("observations") or (next(iter(prep.values())) if prep else None)
+        if prep is not None:
+            return prep
+    return None
+
+
 def _apply_observation_preprocessor(agent, obs, debug: bool = False, step: int = 0):
-    prep = getattr(agent, "_observation_preprocessor", None) or getattr(agent, "observation_preprocessor", None)
+    prep = _resolve_observation_preprocessor(agent)
 
     if prep is None:
-        return obs
+        raise RuntimeError(
+            "[model_eval_utils] observation preprocessor not found on agent "
+            "(checked _observation_preprocessor/observation_preprocessor/"
+            "_state_preprocessor/state_preprocessor). Refusing to feed "
+            "unnormalized observations to the policy."
+        )
 
     if debug:
         print(f"[DEBUG][eval step {step}] before observation preprocessor", flush=True)
