@@ -76,7 +76,7 @@ class Task1Config:
     foot_body_names: Tuple[str, ...] = ("FL_foot", "FR_foot", "RL_foot", "RR_foot")
 
     # ----------------------------- Control -----------------------------
-    action_ema_alpha: float = 0.55
+    action_ema_alpha: float = 0.40
     hip_action_scale: float = 0.20
     thigh_action_scale: float = 0.35
     calf_action_scale: float = 0.35
@@ -142,7 +142,7 @@ class Task1Config:
     w_stand_still: float = 0.03
     w_phase_contact: float = 0.13
     w_air_time: float = 0.10
-    w_clearance: float = 0.09
+    w_clearance: float = 0.12
 
     # 25% stability
     w_upright: float = 0.09
@@ -155,9 +155,9 @@ class Task1Config:
     w_default_pose: float = 0.025
     w_alive: float = 0.002
     w_joint_limit: float = 0.05
-    w_action_rate: float = 0.008
-    w_action_mag: float = 0.002
-    w_foot_slip: float = 0.06
+    w_action_rate: float = 0.04
+    w_action_mag: float = 0.006
+    w_foot_slip: float = 0.09
     w_torque: float = 0.00025
     w_energy: float = 0.0008
 
