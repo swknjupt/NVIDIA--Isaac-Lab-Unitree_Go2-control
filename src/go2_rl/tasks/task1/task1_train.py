@@ -159,6 +159,7 @@ from go2_rl.common.info_utils import (
     tracking_mean,
     write_scalars,
 )
+from go2_rl.common.normalizer_utils import load_normalizers
 from go2_rl.common.progress import go2_progress_postfix
 from go2_rl.tasks.task1.task1_config import Task1Config
 from go2_rl.tasks.task1.task1_env import Go2Task1Env
@@ -400,6 +401,9 @@ def main():
     if args_cli.resume:
         print(f"[INFO] resume skrl checkpoint: {args_cli.resume}")
         agent.load(args_cli.resume)
+        resume_norm_dir = os.path.dirname(os.path.abspath(args_cli.resume))
+        loaded_norms = load_normalizers(agent, resume_norm_dir)
+        print(f"[INFO] resume normalizers: {loaded_norms if loaded_norms else '<none found, using fresh stats>'}")
 
     trainer = Go2StepTrainer(
         cfg={
